@@ -1,0 +1,50 @@
+
+---
+# Configuração alternativa para deploy estático (caso o cPanel não suporte Node.js)
+deployment:
+  tasks:
+    # Navegar para o diretório da aplicação
+    - export DEPLOYPATH=/home/$USER/public_html/excel-calculator
+    
+    # Criar diretório de deploy se não existir
+    - mkdir -p $DEPLOYPATH
+    
+    # Limpar deploy anterior
+    - rm -rf $DEPLOYPATH/*
+    
+    # Navegar para o diretório do projeto Next.js
+    - cd $REPO/app
+    
+    # Instalar dependências usando yarn
+    - /usr/bin/yarn install --frozen-lockfile
+    
+    # Configurar Next.js para export estático
+    - echo 'const nextConfig = { output: "export", distDir: "out", images: { unoptimized: true }, trailingSlash: true }; module.exports = nextConfig;' > next.config.export.js
+    
+    # Fazer build estático da aplicação Next.js
+    - NEXT_CONFIG_FILE=next.config.export.js /usr/bin/yarn build
+    
+    # Copiar arquivos estáticos para o deploy
+    - cp -r out/* $DEPLOYPATH/
+    
+    # Configurar permissões
+    - chmod -R 755 $DEPLOYPATH
+    
+    # Criar .htaccess para SPA routing
+    - echo 'RewriteEngine On' > $DEPLOYPATH/.htaccess
+    - echo 'RewriteCond %{REQUEST_FILENAME} !-f' >> $DEPLOYPATH/.htaccess
+    - echo 'RewriteCond %{REQUEST_FILENAME} !-d' >> $DEPLOYPATH/.htaccess
+    - echo 'RewriteRule ^(.*)$ /excel-calculator/index.html [QSA,L]' >> $DEPLOYPATH/.htaccess
+    
+    # Configurar headers para API (se necessário)
+    - echo 'Header always set Access-Control-Allow-Origin "*"' >> $DEPLOYPATH/.htaccess
+    - echo 'Header always set Access-Control-Allow-Methods "GET,POST,OPTIONS,DELETE,PUT"' >> $DEPLOYPATH/.htaccess
+    - echo 'Header always set Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range"' >> $DEPLOYPATH/.htaccess
+    
+    # Log de sucesso
+    - echo "✅ Deploy estático concluído em $DEPLOYPATH"
+    - ls -la $DEPLOYPATH
+    - echo "🚀 Aplicação estática Excel Calculator pronta!"
+    - echo "📱 Acesse: https://seudominio.com/excel-calculator"
+    - echo ""
+    - echo "⚠️  NOTA: Deploy estático - funcionalidades que dependem de APIs do servidor podem não funcionar"

@@ -1,0 +1,100 @@
+---
+deployment:
+  tasks:
+    # Navegar para o diretório da aplicação
+    - export DEPLOYPATH="/home/$USER/public_html/excel-calculator"
+    
+    # Criar diretório de deploy se não existir
+    - mkdir -p "$DEPLOYPATH"
+    
+    # Limpar deploy anterior (manter backups se necessário)
+    - rm -rf "$DEPLOYPATH/app" "$DEPLOYPATH/package.json" "$DEPLOYPATH/.next"
+    
+    # Navegar para o diretório do projeto Next.js
+    - cd "$REPO/app"
+    
+    # Instalar dependências usando yarn
+    - /usr/bin/yarn install --frozen-lockfile --production=false
+    
+    # Fazer build da aplicação Next.js
+    - /usr/bin/yarn build
+    
+    # Copiar arquivos necessários para o deploy
+    - cp -r .next "$DEPLOYPATH/"
+    - cp -r public "$DEPLOYPATH/" || true
+    - cp package.json "$DEPLOYPATH/"
+    - cp yarn.lock "$DEPLOYPATH/" || true
+    - cp next.config.js "$DEPLOYPATH/"
+    
+    # Copiar arquivos da aplicação (sem node_modules)
+    - rsync -av --exclude=node_modules --exclude=.git --exclude=.next "$REPO/app/" "$DEPLOYPATH/app/"
+    
+    # Instalar apenas dependências de produção no destino
+    - cd "$DEPLOYPATH" && /usr/bin/yarn install --frozen-lockfile --production=true
+    
+    # Configurar permissões
+    - chmod -R 755 "$DEPLOYPATH"
+    
+    # Criar arquivo de configuração Node.js para cPanel (se suportado)
+    - |
+      echo "#!/usr/bin/env node
+      const { createServer } = require('http');
+      const { parse } = require('url');
+      const next = require('next');
+
+      const dev = process.env.NODE_ENV !== 'production';
+      const hostname = process.env.HOST || 'localhost';
+      const port = process.env.PORT || 3000;
+
+      const app = next({ dev, hostname, port, dir: __dirname });
+      const handle = app.getRequestHandler();
+
+      app.prepare().then(() => {
+        createServer(async (req, res) => {
+          try {
+            const parsedUrl = parse(req.url, true);
+            await handle(req, res, parsedUrl);
+          } catch (err) {
+            console.error('Error occurred handling', req.url, err);
+            res.statusCode = 500;
+            res.end('internal server error');
+          }
+        }).listen(port, () => {
+          console.log(\`> Ready on http://\${hostname}:\${port}\`);
+        });
+      });
+      " > "$DEPLOYPATH/app.js"
+    
+    # Criar package.json simplificado para o servidor
+    - |
+      echo '{
+        "name": "excel-calculator-app",
+        "version": "1.0.0",
+        "private": true,
+        "scripts": {
+          "start": "node app.js"
+        },
+        "dependencies": ' > "$DEPLOYPATH/package.json"
+      cat "$REPO/app/package.json" | awk '/"dependencies"/ {flag=1; print "{"; next} flag {print} /}/ {flag=0; print "}"; exit}' >> "$DEPLOYPATH/package.json"
+      echo '}' >> "$DEPLOYPATH/package.json"
+    
+    # Instalar dependências finais
+    - cd "$DEPLOYPATH" && /usr/bin/yarn install --production=true
+    
+    # Criar arquivo .htaccess para redirecionamento (caso não suporte Node.js)
+    - |
+      echo 'RewriteEngine On
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteCond %{REQUEST_FILENAME} !-d
+      RewriteRule ^(.*)$ /excel-calculator/index.html [QSA,L]' > "$DEPLOYPATH/.htaccess"
+    
+    # Log de sucesso
+    - echo "✅ Deploy concluído em $DEPLOYPATH"
+    - echo "📁 Arquivos copiados:"
+    - ls -la "$DEPLOYPATH"
+    - echo "🚀 Aplicação Next.js Excel Calculator pronta!"
+    - echo ""
+    - echo "📋 Instruções pós-deploy:"
+    - echo "1. Se seu cPanel suporta Node.js: Configure Node.js App apontando para $DEPLOYPATH/app.js"
+    - echo "2. Se não suporta Node.js: Faça export estático modificando next.config.js"
+    - echo "3. Acesse: https://seudominio.com/excel-calculator"
