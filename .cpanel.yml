@@ -1,4 +1,4 @@
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/bpn4i9xc07ti/repositories/excel-calculator-app
+    - export DEPLOYPATH=/home/example/public_html/
     - /bin/cp index.html $DEPLOYPATH
