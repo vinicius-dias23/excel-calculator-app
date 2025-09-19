@@ -1,17 +1,17 @@
+
 ---
 deployment:
   tasks:
-    # Navegar para o diretório da aplicação
-    - export DEPLOYPATH="/home/$USER/public_html/excel-calculator"
-    
     # Criar diretório de deploy se não existir
-    - mkdir -p "$DEPLOYPATH"
+    - mkdir -p /home/cpanelusername/public_html/excel-calculator
     
     # Limpar deploy anterior (manter backups se necessário)
-    - rm -rf "$DEPLOYPATH/app" "$DEPLOYPATH/package.json" "$DEPLOYPATH/.next"
+    - rm -rf /home/cpanelusername/public_html/excel-calculator/app
+    - rm -rf /home/cpanelusername/public_html/excel-calculator/package.json
+    - rm -rf /home/cpanelusername/public_html/excel-calculator/.next
     
     # Navegar para o diretório do projeto Next.js
-    - cd "$REPO/app"
+    - cd /home/cpanelusername/repositories/excel_calculator_app/app
     
     # Instalar dependências usando yarn
     - /usr/bin/yarn install --frozen-lockfile --production=false
@@ -20,81 +20,78 @@ deployment:
     - /usr/bin/yarn build
     
     # Copiar arquivos necessários para o deploy
-    - cp -r .next "$DEPLOYPATH/"
-    - cp -r public "$DEPLOYPATH/" || true
-    - cp package.json "$DEPLOYPATH/"
-    - cp yarn.lock "$DEPLOYPATH/" || true
-    - cp next.config.js "$DEPLOYPATH/"
+    - cp -r .next /home/cpanelusername/public_html/excel-calculator/
+    - cp -r public /home/cpanelusername/public_html/excel-calculator/ || true
+    - cp package.json /home/cpanelusername/public_html/excel-calculator/
+    - cp yarn.lock /home/cpanelusername/public_html/excel-calculator/ || true
+    - cp next.config.js /home/cpanelusername/public_html/excel-calculator/
     
     # Copiar arquivos da aplicação (sem node_modules)
-    - rsync -av --exclude=node_modules --exclude=.git --exclude=.next "$REPO/app/" "$DEPLOYPATH/app/"
+    - rsync -av --exclude=node_modules --exclude=.git --exclude=.next /home/cpanelusername/repositories/excel_calculator_app/app/ /home/cpanelusername/public_html/excel-calculator/app/
     
     # Instalar apenas dependências de produção no destino
-    - cd "$DEPLOYPATH" && /usr/bin/yarn install --frozen-lockfile --production=true
+    - cd /home/cpanelusername/public_html/excel-calculator && /usr/bin/yarn install --frozen-lockfile --production=true
     
     # Configurar permissões
-    - chmod -R 755 "$DEPLOYPATH"
+    - chmod -R 755 /home/cpanelusername/public_html/excel-calculator
     
-    # Criar arquivo de configuração Node.js para cPanel (se suportado)
-    - |
-      echo "#!/usr/bin/env node
-      const { createServer } = require('http');
-      const { parse } = require('url');
-      const next = require('next');
-
-      const dev = process.env.NODE_ENV !== 'production';
-      const hostname = process.env.HOST || 'localhost';
-      const port = process.env.PORT || 3000;
-
-      const app = next({ dev, hostname, port, dir: __dirname });
-      const handle = app.getRequestHandler();
-
-      app.prepare().then(() => {
-        createServer(async (req, res) => {
-          try {
-            const parsedUrl = parse(req.url, true);
-            await handle(req, res, parsedUrl);
-          } catch (err) {
-            console.error('Error occurred handling', req.url, err);
-            res.statusCode = 500;
-            res.end('internal server error');
-          }
-        }).listen(port, () => {
-          console.log(\`> Ready on http://\${hostname}:\${port}\`);
-        });
-      });
-      " > "$DEPLOYPATH/app.js"
+    # Criar arquivo de configuração Node.js para cPanel
+    - echo "#!/usr/bin/env node" > /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const { createServer } = require('http');" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const { parse } = require('url');" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const next = require('next');" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const dev = false;" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const hostname = 'localhost';" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const port = 3000;" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const app = next({ dev, hostname, port, dir: __dirname });" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "const handle = app.getRequestHandler();" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "app.prepare().then(() => {" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "  createServer(async (req, res) => {" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "    try {" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "      const parsedUrl = parse(req.url, true);" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "      await handle(req, res, parsedUrl);" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "    } catch (err) {" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "      console.error('Error occurred handling', req.url, err);" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "      res.statusCode = 500;" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "      res.end('internal server error');" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "    }" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "  }).listen(port, () => {" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "    console.log('Excel Calculator ready on port ' + port);" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "  });" >> /home/cpanelusername/public_html/excel-calculator/app.js
+    - echo "});" >> /home/cpanelusername/public_html/excel-calculator/app.js
     
     # Criar package.json simplificado para o servidor
-    - |
-      echo '{
-        "name": "excel-calculator-app",
-        "version": "1.0.0",
-        "private": true,
-        "scripts": {
-          "start": "node app.js"
-        },
-        "dependencies": ' > "$DEPLOYPATH/package.json"
-      cat "$REPO/app/package.json" | awk '/"dependencies"/ {flag=1; print "{"; next} flag {print} /}/ {flag=0; print "}"; exit}' >> "$DEPLOYPATH/package.json"
-      echo '}' >> "$DEPLOYPATH/package.json"
+    - echo '{' > /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  "name": "excel-calculator-app",' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  "version": "1.0.0",' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  "private": true,' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  "scripts": {' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '    "start": "node app.js"' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  },' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  "dependencies": {' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - cat /home/cpanelusername/repositories/excel_calculator_app/app/package.json | grep -A 1000 '"dependencies"' | grep -B 1000 '}' | head -n -1 >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '  }' >> /home/cpanelusername/public_html/excel-calculator/package.json
+    - echo '}' >> /home/cpanelusername/public_html/excel-calculator/package.json
     
     # Instalar dependências finais
-    - cd "$DEPLOYPATH" && /usr/bin/yarn install --production=true
+    - cd /home/cpanelusername/public_html/excel-calculator && /usr/bin/yarn install --production=true
     
     # Criar arquivo .htaccess para redirecionamento (caso não suporte Node.js)
-    - |
-      echo 'RewriteEngine On
-      RewriteCond %{REQUEST_FILENAME} !-f
-      RewriteCond %{REQUEST_FILENAME} !-d
-      RewriteRule ^(.*)$ /excel-calculator/index.html [QSA,L]' > "$DEPLOYPATH/.htaccess"
+    - echo 'RewriteEngine On' > /home/cpanelusername/public_html/excel-calculator/.htaccess
+    - echo 'RewriteCond %{REQUEST_FILENAME} !-f' >> /home/cpanelusername/public_html/excel-calculator/.htaccess
+    - echo 'RewriteCond %{REQUEST_FILENAME} !-d' >> /home/cpanelusername/public_html/excel-calculator/.htaccess
+    - echo 'RewriteRule ^(.*)$ /excel-calculator/index.html [QSA,L]' >> /home/cpanelusername/public_html/excel-calculator/.htaccess
     
     # Log de sucesso
-    - echo "✅ Deploy concluído em $DEPLOYPATH"
+    - echo "✅ Deploy concluído em /home/cpanelusername/public_html/excel-calculator"
     - echo "📁 Arquivos copiados:"
-    - ls -la "$DEPLOYPATH"
+    - ls -la /home/cpanelusername/public_html/excel-calculator
     - echo "🚀 Aplicação Next.js Excel Calculator pronta!"
     - echo ""
     - echo "📋 Instruções pós-deploy:"
-    - echo "1. Se seu cPanel suporta Node.js: Configure Node.js App apontando para $DEPLOYPATH/app.js"
+    - echo "1. Se seu cPanel suporta Node.js: Configure Node.js App apontando para /home/cpanelusername/public_html/excel-calculator/app.js"
     - echo "2. Se não suporta Node.js: Faça export estático modificando next.config.js"
     - echo "3. Acesse: https://seudominio.com/excel-calculator"
